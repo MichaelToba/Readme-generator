@@ -1,151 +1,88 @@
-// need the const fs variable here
+// Importing required modules
 const fs = require("fs");
-
-// need inquirer variable here
+const util = require("util");
 const inquirer = require("inquirer");
+const generateMarkdown = require("./utils/generatereadme");
+const writeFileAsync = util.promisify(fs.writeFile);
 
-// need a markdown js file here
-const generateMarkdown = require("./utils/generateMarkdown");
-
-
-// License function and  if/else section here 
-function getLicense(value) {
-    if (value === "GNU AGPLv3") {
-        return "[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)";
-    } else if (value === "GNU GPLv3") {
-        return "[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)";
-    } else if (value === "GNU LGPLv3") {
-        return "[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)";
-    } else if (value === "Apache 2.0") {
-        return "[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)";
-    } else if (value === "Boost Software 1.0") {
-        return "[![License](https://img.shields.io/badge/License-Boost%201.0-lightblue.svg)](https://www.boost.org/LICENSE_1_0.txt)";
-    } else if (value === "MIT") {
-        return "[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)";
-    } else {
-        return "[![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)";
-    }
-}
-
-
-function validateInput(value) {
-    if (value != "") {
-        return true;
-    } else {
-        return "Please answer the question with some kind on input.";
-    }
-}
-
-
-const questions = [
-    // Question for the Title
-    {
-        type: "input",
-        name: "title",
-        message: "What is the title of your project?",
-        validate: validateInput,
-    },
-    // Question for the project Description
-    {
-        type: "input",
-        name: "description",
-        message: "Please enter a description of your project.",
-        validate: validateInput,
-    },
-
-    // Table of Contents, andling this in the markdown.js
-
-    // Question for Installation
-    {
-        type: "input",
-        name: "installation",
-        message: "Please enter an explanation how to install the software, or commands for the program.",
-        validate: validateInput,
-    },
-
-    // Question for Usage
-    {
-        type: "input",
-        name: "usage",
-        message: "Please describe how we can use this program/project.",
-        validate: validateInput,
-    },
-
-    // Question for License 
-    {
-        type: "list",
-        name: "license",
-        message: "Please select a license for this project.",
-        choices: [
-            "GNU AGPLv3",
-            "GNU GPLv3",
-            "GNU LGPLv3",
-            "Apache 2.0",
-            "Boost Software 1.0",
-            "MIT",
-            "Mozilla",
-        ],
-        validate: validateInput,
-    },
-
-    // Question for Contributing 
-    {
-        type: "input",
-        name: "contributing",
-        message: "How can users contribute to your project.",
-        validate: validateInput,
-    },
-
-    // Question for Tests
-    {
-        type: "input",
-        name: "tests",
-        message: "Please enter any testing instructions you would like to provide for this project.",
-        validate: validateInput,
-    },
-
-    // QUESTIONS section -- github 
-    {
-        type: "input",
-        name: "userName",
-        message: "What is your GitHub username?",
-        validate: validateInput,
-    },
-
-    // QUESTIONS section -- email address
-    {
-        type: "input",
-        name: "userEmail",
-        message: "What is your GitHub email address that contributors may contact?",
-        validate: function (value) {
-            if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)) {
-                return true;
-            } else {
-                return "Not a valid email address. Please enter a valid email address.";
-            }
+// Function to prompt the user with questions
+async function promptUser() {
+    return inquirer.prompt([
+        {
+            type: "input",
+            name: "projectTitle",
+            message: "Enter the project title:",
         },
-    },
-];
-
-
-// function to generate the ReadMe here
-function writeToFile(fileName, data) {
-    fs.writeFile(fileName, generateMarkdown(data), function (err) {
-        if (err) {
-            return console.log(err);
-        }
-    });
+        {
+            type: "input",
+            name: "description",
+            message: "Provide a brief project description:",
+        },
+        {
+            type: "input",
+            name: "installation",
+            message: "Explain the installation process (if any):",
+        },
+        {
+            type: "input",
+            name: "usage",
+            message: "Describe the usage of this project:",
+        },
+        {
+            type: "list",
+            name: "license",
+            message: "Choose a license for your project:",
+            choices: [
+                "Apache License 2.0",
+                "MIT License",
+                "GNU General Public License v3.0",
+                "ISC License",
+                "Mozilla Public License 2.0",
+                "The Unlicense",
+            ],
+        },
+        {
+            type: "input",
+            name: "contributing",
+            message: "List the contributors to this project:",
+        },
+        {
+            type: "input",
+            name: "tests",
+            message: "Include any testing instructions:",
+        },
+        {
+            type: "input",
+            name: "questions",
+            message: "What to do in case of issues or questions:",
+        },
+        {
+            type: "input",
+            name: "githubUsername",
+            message: "Enter your GitHub username:",
+        },
+        {
+            type: "input",
+            name: "email",
+            message: "Enter your email address:",
+        },
+    ]);
 }
 
+// Initialize the application
+async function init() {
+    try {
+        // Prompt the user and generate responses
+        const userResponses = await promptUser();
+        const generatedMarkdown = generateMarkdown(userResponses);
 
-// function to initalize the beginning of the questions 
-function init() {
-    inquirer.prompt(questions).then((data) => {
-        console.log(JSON.stringify(data, null, " "));
-        data.getLicense = getLicense(data.license);
-        writeToFile("./example/README.md", data);
-    });
+        // Write the generated README to a file
+        await writeFileAsync("README.md", generatedMarkdown);
+        console.log("✅  README.md successfully generated!");
+    } catch (error) {
+        console.error("❌  Error generating README.md:", error);
+    }
 }
 
-// call the function to initalize the beginning of the questions 
+// Start the application
 init();
